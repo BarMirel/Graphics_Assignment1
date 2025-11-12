@@ -53,11 +53,11 @@ copy_res_m:
 # Copy library and resources (Windows)
 copy_lib_w:
 	@echo "Copying library for Windows..."
-	xcopy /D /I ${workspaceFolder}\lib\windows\glfw3.dll ${workspaceFolder}\bin\
+	cmd /c xcopy /D /I ${workspaceFolder}\lib\windows\glfw3.dll ${workspaceFolder}\bin\
 
 copy_res_w:
 	@echo "Copying resources for Windows..."
-	xcopy /E /I /Y ${workspaceFolder}\src\res ${workspaceFolder}\bin\res
+	cmd /c xcopy /E /I /Y ${workspaceFolder}\src\res ${workspaceFolder}\bin\res
 
 # Copy library and resources (Linux)
 copy_lib_l:
