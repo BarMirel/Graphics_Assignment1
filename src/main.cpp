@@ -47,6 +47,37 @@ void gaussian_filter(const unsigned char* input, unsigned char* output, int widt
     }
 }
 
+void halftone(const unsigned char* input, unsigned char* output, int width, int height) {
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            unsigned char gray = input[y * width + x];
+            int baseX = x * 2;
+            int baseY = y * 2;
+
+            unsigned char color00, color01, color10, color11;
+
+            if (gray < 256*0.2) {
+                color00 = color01 = color10 = color11 = 0;
+            } else if (gray < 256*0.4) {
+                color00 = 0; color01 = 0;
+                color10 = 255;   color11 = 0;
+            } else if (gray < 256*0.6) {
+                color00 = 0; color01 = 255;
+                color10 = 255;   color11 = 0;
+            } else if (gray < 256*0.8) {
+                color00 = 0; color01 = 255;
+                color10 = 255;   color11 = 255;
+            } else {
+                color00 = color01 = color10 = color11 = 255;
+            }
+            output[baseY * width * 2 + baseX] = color00;
+            output[baseY * width * 2 + (baseX + 1)] = color01;
+            output[(baseY + 1) * width * 2 + baseX] = color10;
+            output[(baseY + 1) * width * 2 + (baseX + 1)] = color11;
+        }
+    }
+}
+
 int main(void)
 {
     std::string filepath = "res/textures/Lenna.png";
@@ -63,9 +94,15 @@ int main(void)
     gaussian_filter(gray_buffer, smooth_buffer, width, height);
     result = stbi_write_png("res/textures/smoothed.png", width, height, 1, smooth_buffer, width);
     std::cout << "Gaussian result: " << result << std::endl;
-    delete[] gray_buffer;
-    delete[] smooth_buffer;
+
+    unsigned char* halftoned_buffer = new unsigned char[width * height * 4];
+    halftone(gray_buffer, halftoned_buffer, width, height);
+    result = stbi_write_png("res/textures/Halftone.png", width*2, height*2, 1, halftoned_buffer, width*2);
+    std::cout << "Halftone result: " << result << std::endl;
 
     stbi_image_free(buffer);
+    stbi_image_free(gray_buffer);
+    stbi_image_free(smooth_buffer);
+    stbi_image_free(halftoned_buffer);
     return 0;
 }
