@@ -1,6 +1,7 @@
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 #include <iostream>
+#include <math.h>
 
 unsigned char clip(int value) {
     if (value < 0) return 0;
@@ -78,6 +79,34 @@ void halftone(const unsigned char* input, unsigned char* output, int width, int 
     }
 }
 
+void floyd_steinberg(const unsigned char* input, unsigned char* output, int width, int height){
+    float* buffer = new float[width * height]; // New buffer for allowing changes in the array (needed for calculation later)
+    for (int i = 0; i < width * height; i++)
+        buffer[i] = input[i];
+
+    const float step = 255.0f / 15.0f; //Gives 16 levels of intensity, using / 16 will give an ec=xtra level because of the rounding later
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = y * width + x;
+            float oldPixel = buffer[idx];
+            float newPixel = round(oldPixel / step) * step;
+            output[idx] = clip((int)newPixel);
+            float error = oldPixel - newPixel;
+            if (x + 1 < width)
+                buffer[idx + 1] += error * 7.0f / 16.0f;
+            if (y + 1 < height) {
+                buffer[idx + width] += error * 5.0f / 16.0f;
+                if (x > 0)
+                    buffer[idx + width - 1] += error * 3.0f / 16.0f;
+                if (x + 1 < width)
+                    buffer[idx + width + 1] += error * 1.0f / 16.0f;
+            }
+        }
+    }
+    delete[] buffer;
+}
+
 int main(void)
 {
     std::string filepath = "res/textures/Lenna.png";
@@ -100,9 +129,15 @@ int main(void)
     result = stbi_write_png("res/textures/Halftone.png", width*2, height*2, 1, halftoned_buffer, width*2);
     std::cout << "Halftone result: " << result << std::endl;
 
+    unsigned char* floyd_steinberg_buffer = new unsigned char[width * height];
+    floyd_steinberg(gray_buffer, floyd_steinberg_buffer, width, height);
+    result = stbi_write_png("res/textures/FloyedSteinberg.png", width, height, 1, floyd_steinberg_buffer, width);
+    std::cout << "FloyedSteinberg result: " << result << std::endl;
+
     stbi_image_free(buffer);
     stbi_image_free(gray_buffer);
     stbi_image_free(smooth_buffer);
     stbi_image_free(halftoned_buffer);
+    stbi_image_free(floyd_steinberg_buffer);
     return 0;
 }
